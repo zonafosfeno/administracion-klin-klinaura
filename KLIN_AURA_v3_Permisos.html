@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KLIN / AURA — Sistema de Gestión v3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:13px}
+:root{--azul:#1B3A4B;--aura:#4ECDC4;--klin:#FF6B35;--verde:#27ae60;--rojo:#e74c3c;--amarillo:#f39c12;--gris:#95a5a6;--bg:#f0f2f5;--card:#fff;--rad:8px}
+
+/* ── LOGIN ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1B3A4B 0%,#2d6a8f 60%,#4ECDC4 100%)}
+.login-box{background:#fff;border-radius:16px;padding:40px 48px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
+.login-logo{font-size:28px;font-weight:800;color:#1B3A4B;letter-spacing:2px;margin-bottom:4px}
+.login-sub{color:#888;font-size:12px;margin-bottom:28px}
+.login-box input{width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none;transition:.2s}
+.login-box input:focus{border-color:#4ECDC4}
+.login-box button{width:100%;padding:12px;background:linear-gradient(135deg,#1B3A4B,#2d6a8f);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.login-err{color:#e74c3c;font-size:12px;margin-top:8px;display:none}
+
+/* ── APP SHELL ── */
+#appShell{display:none;height:100vh;overflow:hidden}
+.app-wrap{display:flex;height:100%}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;min-width:220px;background:#1B3A4B;color:#fff;display:flex;flex-direction:column;overflow:hidden}
+.sb-logo{padding:18px 16px 12px;font-size:20px;font-weight:800;letter-spacing:1px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo span{color:#4ECDC4}
+.sb-user{padding:10px 16px 10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:11px;color:#aac}
+.sb-user strong{display:block;font-size:13px;color:#fff}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 0}
+.sb-section{padding:6px 16px 2px;font-size:10px;text-transform:uppercase;color:#7a8fa6;letter-spacing:1px;margin-top:6px}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;font-size:12px;color:#c8d8e8;border-radius:6px;margin:1px 6px;transition:.15s}
+.sb-btn:hover,.sb-btn.active{background:rgba(78,205,196,.15);color:#4ECDC4}
+.sb-btn .ic{width:18px;text-align:center;font-size:14px}
+.sb-bottom{padding:12px;border-top:1px solid rgba(255,255,255,.1)}
+.sb-logout{width:100%;padding:8px;background:rgba(231,76,60,.2);color:#e74c3c;border:1px solid rgba(231,76,60,.3);border-radius:6px;cursor:pointer;font-size:12px}
+
+/* ── MAIN CONTENT ── */
+.main-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid #e5e9f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;min-height:54px}
+.topbar-title{font-size:18px;font-weight:700;color:#1B3A4B}
+.topbar-sub{font-size:11px;color:#888;margin-top:1px}
+.main-body{flex:1;overflow-y:auto;padding:24px}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--rad);box-shadow:0 2px 8px rgba(0,0,0,.06);padding:20px;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #f0f2f5}
+.card-title{font-size:15px;font-weight:700;color:#1B3A4B}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── KPI STAT BOXES ── */
+.stat-box{background:#fff;border-radius:var(--rad);padding:16px 18px;border-left:4px solid var(--aura);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.stat-val{font-size:26px;font-weight:800;color:#1B3A4B}
+.stat-lbl{font-size:11px;color:#888;margin-top:2px}
+.stat-box.verde{border-color:#27ae60}.stat-box.rojo{border-color:#e74c3c}.stat-box.amarillo{border-color:#f39c12}.stat-box.azul{border-color:#2980b9}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e5e9f0;padding-bottom:0}
+.tab-btn{padding:9px 18px;cursor:pointer;font-size:12px;font-weight:600;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab-btn.active{color:#1B3A4B;border-bottom-color:#4ECDC4}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.btn-pri{background:#1B3A4B;color:#fff}.btn-pri:hover{background:#2d5a7b}
+.btn-aura{background:#4ECDC4;color:#fff}.btn-aura:hover{background:#3dbdb5}
+.btn-ok{background:#27ae60;color:#fff}.btn-ok:hover{background:#229954}
+.btn-warn{background:#e74c3c;color:#fff}.btn-warn:hover{background:#c0392b}
+.btn-amber{background:#f39c12;color:#fff}.btn-amber:hover{background:#d68910}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-ghost{background:transparent;border:1.5px solid #ccc;color:#555}.btn-ghost:hover{border-color:#888;color:#222}
+.btn-propose{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-propose:hover{opacity:.9}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.badge-ok{background:#d5f5e3;color:#1e8449}.badge-no{background:#fde8e8;color:#c0392b}
+.badge-pen{background:#fef9e7;color:#9a7d0a}.badge-info{background:#d6eaf8;color:#1a5276}
+.badge-gray{background:#ecf0f1;color:#555}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#1B3A4B;color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle}
+tr:hover td{background:#f8f9ff}
+.td-num{text-align:center}
+.td-input{width:60px;padding:3px 6px;border:1.5px solid #ddd;border-radius:4px;text-align:center;font-size:12px}
+.td-input:focus{border-color:#4ECDC4;outline:none}
+
+/* ── FIRMA STATUS ── */
+.firma-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.firma-step{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid #ddd;background:#fff}
+.firma-step.done{background:#d5f5e3;border-color:#27ae60;color:#1e8449}
+.firma-step.active{background:#fef9e7;border-color:#f39c12;color:#9a7d0a}
+.firma-step.pending{background:#f8f9fa;color:#999}
+.firma-arrow{color:#ccc;font-size:16px}
+
+/* ── PROC PROPOSAL ── */
+.proposal-banner{background:#fff8e1;border:1.5px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
+.proposal-banner .pb-icon{font-size:20px}
+.proposal-banner .pb-body{flex:1}
+.proposal-banner .pb-title{font-weight:700;color:#9a7d0a;font-size:12px}
+.proposal-banner .pb-sub{color:#555;font-size:11px;margin-top:2px}
+.proposal-banner .pb-actions{display:flex;gap:8px;margin-top:8px}
+
+.approved-banner{background:#d5f5e3;border:1.5px solid #27ae60;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#1e8449;font-weight:600}
+.rejected-banner{background:#fde8e8;border:1.5px solid #e74c3c;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#c0392b;font-weight:600}
+
+/* ── HISTORY ── */
+.hist-item{border-left:3px solid #4ECDC4;padding:8px 12px;margin-bottom:8px;background:#f8fdfe;border-radius:0 6px 6px 0}
+.hist-meta{font-size:10px;color:#888;margin-bottom:2px}
+.hist-status{font-size:11px;font-weight:600}
+
+/* ── PROC EDIT ── */
+.proc-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #f0f2f5}
+.proc-row:last-child{border-bottom:none}
+.proc-num{min-width:24px;height:24px;background:#1B3A4B;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px}
+.proc-text{flex:1;font-size:12px;line-height:1.5}
+.proc-editable{flex:1;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;min-height:32px;resize:none;font-family:inherit;line-height:1.4}
+.proc-editable:focus{border-color:#4ECDC4;outline:none}
+.proc-del-btn{background:#fde8e8;border:none;color:#c0392b;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:1px;flex-shrink:0}
+
+/* ── ENT TABLE ── */
+.ent-row td{padding:6px 8px}
+.ent-check{width:16px;height:16px;cursor:pointer}
+.ent-obs{width:100%;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;font-family:inherit}
+.ent-obs:focus{outline:none;border-color:#4ECDC4}
+
+/* ── LISTONES ── */
+.liston-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.liston{padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px}
+.l-rojo{background:#e74c3c}.l-amarillo{background:#f39c12}.l-azul{background:#2980b9}.l-verde{background:#27ae60}.l-blanco{background:#95a5a6}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:28px;max-width:540px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-title{font-size:17px;font-weight:700;color:#1B3A4B;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #f0f2f5}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;color:#555;margin-bottom:4px;display:block}
+.form-input{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:inherit}
+.form-input:focus{border-color:#4ECDC4}
+.form-select{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;background:#fff;outline:none}
+.form-select:focus{border-color:#4ECDC4}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f2f5}
+
+/* ── PERM MATRIX ── */
+.perm-section{margin-bottom:12px;padding:10px 12px;background:#f8f9fa;border-radius:6px}
+.perm-section-title{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.perm-checks{display:flex;flex-wrap:wrap;gap:8px}
+.perm-check{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+.perm-check input{width:15px;height:15px;cursor:pointer;accent-color:#4ECDC4}
+
+/* ── PASSWORD ── */
+.pass-cell{display:flex;align-items:center;gap:6px}
+.pass-hidden{letter-spacing:2px;font-family:monospace;font-size:12px;color:#888}
+.pass-visible{font-family:monospace;font-size:12px;color:#1B3A4B;font-weight:600}
+.pass-toggle{background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:2px}
+.pass-toggle:hover{color:#4ECDC4}
+
+/* ── GERENTE KPI ── */
+.gkpi-card{background:linear-gradient(135deg,#1B3A4B,#2d6a8f);color:#fff;border-radius:10px;padding:16px;margin-bottom:10px}
+.gkpi-name{font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.gkpi-meta{font-size:10px;opacity:.7;margin-bottom:8px}
+.gkpi-val{font-size:24px;font-weight:800;color:#4ECDC4}
+
+/* ── RESPONSIVE ── */
+@media print{
+  .sidebar,.topbar,.sb-bottom{display:none!important}
+  .main-content{overflow:visible}
+  .main-body{overflow:visible;padding:0}
+  .btn,.modal-overlay{display:none!important}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+}
+
+/* ── AREA CARD (sidebar selector) ── */
+.area-pill{padding:7px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;margin:2px 6px;transition:.15s;border:none;background:transparent;color:#c8d8e8;text-align:left;width:calc(100% - 12px)}
+.area-pill:hover{background:rgba(78,205,196,.15);color:#4ECDC4}
+.area-pill.active{background:rgba(78,205,196,.2);color:#4ECDC4;border-left:3px solid #4ECDC4}
+.brand-aura{border-left:3px solid #4ECDC4!important}
+.brand-klin{border-left:3px solid #FF6B35!important}
+.brand-op{border-left:3px solid #9b59b6!important}
+
+/* ── PENDING BADGE ── */
+.pend-dot{width:8px;height:8px;background:#e74c3c;border-radius:50%;display:inline-block;margin-left:4px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── SCROLL ── */
+.sb-nav::-webkit-scrollbar,.main-body::-webkit-scrollbar{width:5px}
+.sb-nav::-webkit-scrollbar-thumb,.main-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+.main-body::-webkit-scrollbar-thumb{background:#d0d7df}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">KLIN<span style="color:#4ECDC4"> / </span>AURA</div>
+    <div class="login-sub">Sistema de Gestión Operativa v3.0</div>
+    <input type="email" id="lgEmail" placeholder="Correo electrónico" autocomplete="username">
+    <input type="password" id="lgPass" placeholder="Contraseña" autocomplete="current-password">
+    <button onclick="doLogin()">Iniciar sesión</button>
+    <div class="login-err" id="lgErr">Correo o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- ══════════ APP SHELL ══════════ -->
+<div id="appShell">
+<div class="app-wrap">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">KLIN<span>/</span>AURA</div>
+    <div class="sb-user" id="sbUser"><strong id="sbName">—</strong><span id="sbRole">—</span></div>
+    <div class="sb-nav" id="sbNav"><!-- filled by JS --></div>
+    <div class="sb-bottom">
+      <button class="sb-logout" onclick="doLogout()">⬛ Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topTitle">Inicio</div>
+        <div class="topbar-sub" id="topSub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="weekLabel" style="font-size:11px;color:#888;background:#f0f2f5;padding:4px 10px;border-radius:12px"></span>
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="main-body" id="mainBody"><!-- filled by JS --></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+<!-- User edit modal -->
+<div class="modal-overlay" id="modalUser">
+  <div class="modal-box" style="max-width:620px">
+    <div class="modal-title" id="modalUserTitle">Editar usuario</div>
+    <div id="modalUserBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalUser')">Cancelar</button>
+      <button class="btn btn-ok" onclick="saveUserModal()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Obs modal (firma observation) -->
+<div class="modal-overlay" id="modalObs">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-title" id="modalObsTitle">Observaciones</div>
+    <textarea id="modalObsText" class="form-input" rows="4" style="resize:vertical" placeholder="Agregar observaciones (opcional)..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalObs')">Cancelar</button>
+      <button class="btn btn-ok" id="modalObsOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Proposal review modal (for gerente) -->
+<div class="modal-overlay" id="modalProposal">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-title">Revisar propuesta de proceso</div>
+    <div id="modalProposalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalProposal')">Cancelar</button>
+      <button class="btn btn-warn" onclick="rejectProposal()">✗ Rechazar</button>
+      <button class="btn btn-ok" onclick="approveProposal()">✓ Aprobar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-title" id="modalConfirmTitle">Confirmar</div>
+    <p id="modalConfirmMsg" style="font-size:13px;color:#555;line-height:1.5"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn btn-warn" id="modalConfirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA DEFINITIONS
+// ══════════════════════════════════════════
+const AREA_LIST = [
+  {id:'aura-mariano',   name:'AURA Mariano Otero',    brand:'AURA', color:'#1B3A4B', light:'#EBF4FB', tipo:'tienda'},
+  {id:'aura-zapopan',   name:'AURA Zapopan',           brand:'AURA', color:'#1B3A4B', light:'#EBF4FB', tipo:'tienda'},
+  {id:'aura-tlaquepaque',name:'AURA Tlaquepaque',      brand:'AURA', color:'#1B3A4B', light:'#EBF4FB', tipo:'tienda'},
+  {id:'klin-mariano',   name:'KLIN Mariano Otero',     brand:'KLIN', color:'#c0392b', light:'#FEF0EC', tipo:'tienda'},
+  {id:'klin-zapopan',   name:'KLIN Zapopan',           brand:'KLIN', color:'#c0392b', light:'#FEF0EC', tipo:'tienda'},
+  {id:'klin-tlaquepaque',name:'KLIN Tlaquepaque',      brand:'KLIN', color:'#c0392b', light:'#FEF0EC', tipo:'tienda'},
+  {id:'alm-aura',       name:'Almacén AURA',           brand:'AURA', color:'#2980b9', light:'#EBF5FB', tipo:'almacen'},
+  {id:'alm-klin',       name:'Almacén KLIN',           brand:'KLIN', color:'#8e44ad', light:'#F4ECF7', tipo:'almacen'},
+  {id:'tienda-linea',   name:'Tienda en Línea',        brand:'AURA', color:'#16a085', light:'#E8F8F5', tipo:'linea'},
+  {id:'produccion',     name:'Producción',             brand:'KLIN', color:'#d35400', light:'#FEF9E7', tipo:'produccion'},
+  {id:'marketing',      name:'Marketing',              brand:'AURA', color:'#8e44ad', light:'#F4ECF7', tipo:'marketing'},
+  {id:'rh',             name:'Recursos Humanos',       brand:'KLIN', color:'#2c3e50', light:'#EAECEE', tipo:'rh'},
+  {id:'contabilidad',   name:'Contabilidad',           brand:'KLIN', color:'#1abc9c', light:'#E8F8F5', tipo:'conta'},
+  {id:'chofer-mar',     name:'Chofer Mariano',         brand:'KLIN', color:'#7f8c8d', light:'#F2F3F4', tipo:'logistica'},
+  {id:'chofer-tlq',     name:'Chofer Tlaquepaque',     brand:'KLIN', color:'#7f8c8d', light:'#F2F3F4', tipo:'logistica'},
+];
+
+// Default processes per area type
+const DEF_PROC = {
+  tienda: ['Apertura de tienda: revisar sistema y puntualidad (9:50am)','Atención al cliente con Sistema de Listones de Colores','Surtido de producto con Sistema PEPS','Control de caja: apertura, corte y cierre','Revisión de inventario y mínimos de reorden','Limpieza y orden con Sistema 3F','Reporte diario de ventas','Cierre de tienda'],
+  almacen: ['Recepción de mercancía: verificar cantidades vs factura','Registro en sistema PEPS','Acomodo con Sistema 3F por producto y marca','Preparación de pedidos internos','Despacho de pedidos SKYDROP (en línea)','Control de temperatura y humedad','Inventario semanal','Cierre y reporte diario'],
+  linea: ['Revisión de pedidos SKYDROP en plataforma','Procesamiento de órdenes (pago confirmado)','Coordinación con almacén para surtido','Generación de guías de envío','Seguimiento de envíos y atención cliente','Registro de incidencias y devoluciones','Reporte semanal de ventas en línea'],
+  produccion: ['Apertura: verificar materias primas disponibles','Producción por lote con registro en sistema','Control de calidad por lote','Etiquetado y empaque','Traslado a almacén con hoja de lote','Limpieza del área de producción','Reporte de producción diaria'],
+  marketing: ['Revisión de métricas redes sociales','Programación de contenido semanal','Coordinación con tiendas para materiales','Seguimiento de campañas activas','Análisis de competencia mensual','Reporte de KPIs de marketing'],
+  rh: ['Control de asistencia y puntualidad','Gestión de incidencias del personal','Proceso de contratación y onboarding','Evaluaciones de desempeño','Nómina semanal','Reporte de indicadores RH'],
+  conta: ['Registro de operaciones diarias','Conciliación bancaria semanal','Facturación y cobranza','Cuentas por pagar','Estados financieros mensuales','Declaraciones fiscales'],
+  logistica: ['Revisión de ruta y pedidos del día','Carga de mercancía con verificación','Entrega con firma de recibido','Reporte de entregas y km recorridos','Incidencias durante ruta'],
+};
+
+function getDefProc(areaId) {
+  const a = AREA_LIST.find(x=>x.id===areaId);
+  if (!a) return [];
+  return (DEF_PROC[a.tipo] || DEF_PROC.tienda).map((t,i)=>({id:i+1,text:t}));
+}
+
+// KPI definitions per area
+const KPI_DEF = {
+  tienda: [
+    {name:'Ventas del día vs meta',meta:'≥ 100%',unit:'%'},
+    {name:'Atención al cliente (tiempo promedio)',meta:'< 5 min',unit:'min'},
+    {name:'Inventario sin rotación > 30 días',meta:'< 5 productos',unit:'pcs'},
+    {name:'Cumplimiento apertura/cierre',meta:'100%',unit:'%'},
+    {name:'Incidencias registradas',meta:'0',unit:'núm'},
+  ],
+  almacen: [
+    {name:'Pedidos surtidos a tiempo',meta:'100%',unit:'%'},
+    {name:'Errores en surtido',meta:'0',unit:'núm'},
+    {name:'Tiempo promedio de despacho',meta:'< 2 hrs',unit:'hrs'},
+    {name:'Devoluciones recibidas',meta:'< 2',unit:'núm'},
+  ],
+  linea: [
+    {name:'Órdenes procesadas',meta:'100%',unit:'%'},
+    {name:'Tiempo de envío promedio',meta:'< 24 hrs',unit:'hrs'},
+    {name:'Calificación cliente',meta:'≥ 4.5',unit:'★'},
+    {name:'Incidencias de envío',meta:'< 2%',unit:'%'},
+  ],
+  produccion: [
+    {name:'Lotes producidos vs planeado',meta:'100%',unit:'%'},
+    {name:'Rechazos de calidad',meta:'0',unit:'núm'},
+    {name:'Desperdicio de materiales',meta:'< 3%',unit:'%'},
+    {name:'Cumplimiento de horario',meta:'100%',unit:'%'},
+  ],
+  marketing: [
+    {name:'Publicaciones programadas cumplidas',meta:'100%',unit:'%'},
+    {name:'Alcance semanal redes',meta:'≥ 5,000',unit:'reach'},
+    {name:'Nuevos seguidores',meta:'≥ 50/sem',unit:'núm'},
+    {name:'Interacciones (likes+cmts)',meta:'≥ 200/sem',unit:'núm'},
+  ],
+  rh: [
+    {name:'Asistencia general',meta:'≥ 98%',unit:'%'},
+    {name:'Incidencias de personal',meta:'0',unit:'núm'},
+    {name:'Nómina a tiempo',meta:'100%',unit:'%'},
+  ],
+  conta: [
+    {name:'Facturas emitidas a tiempo',meta:'100%',unit:'%'},
+    {name:'Conciliación al día',meta:'Sí',unit:'sí/no'},
+    {name:'Pagos pendientes',meta:'0',unit:'núm'},
+  ],
+  logistica: [
+    {name:'Entregas completadas vs programadas',meta:'100%',unit:'%'},
+    {name:'Entregas a tiempo',meta:'≥ 95%',unit:'%'},
+    {name:'Incidencias en ruta',meta:'0',unit:'núm'},
+  ],
+};
+
+function getKpiDef(areaId) {
+  const a = AREA_LIST.find(x=>x.id===areaId);
+  if (!a) return [];
+  return (KPI_DEF[a.tipo] || KPI_DEF.tienda);
+}
+
+// Gerente KPI definitions (only editable by Maestro)
+const KPIS_GERENTE = [
+  {name:'Cumplimiento de metas del área supervisada',meta:'≥ 85%',unit:'%'},
+  {name:'Tiempo de respuesta a firmas pendientes',meta:'< 24 horas',unit:'hrs'},
+  {name:'Reportes entregados a tiempo',meta:'100%',unit:'%'},
+  {name:'Resolución de conflictos en su zona',meta:'> 90%',unit:'%'},
+];
+
+// Entregables defaults
+function getDefEnt(areaId) {
+  const a = AREA_LIST.find(x=>x.id===areaId);
+  const tipo = a ? a.tipo : 'tienda';
+  const base = {
+    tienda:['Reporte de ventas diario','Corte de caja','Reporte de inventario semanal','Lista de faltantes','Hoja de control de listones'],
+    almacen:['Reporte de recepción','Hoja de surtido completada','Reporte de inventario diario','Control de lotes PEPS'],
+    linea:['Reporte de órdenes procesadas','Guías de envío generadas','Reporte de incidencias','Estadísticas semanales'],
+    produccion:['Hoja de lote completada','Reporte de producción diaria','Control de calidad por lote','Inventario de materias primas'],
+    marketing:['Calendario de contenido','Reporte de métricas semanales','Materiales para tiendas','Informe de campañas'],
+    rh:['Registro de asistencia','Nómina semanal','Reporte de incidencias','Evaluaciones pendientes'],
+    conta:['Registro diario de operaciones','Conciliación semanal','Reporte fiscal mensual'],
+    logistica:['Hoja de ruta diaria','Firma de entregas','Reporte de km y combustible'],
+  };
+  return (base[tipo] || base.tienda).map((t,i)=>({id:i+1,text:t,check:false,obs:''}));
+}
+
+// ══════════════════════════════════════════
+//  DEFAULT USERS
+// ══════════════════════════════════════════
+const DEFAULT_USERS = [
+  {id:'u1', name:'Maestro Admin',   email:'maestro@klin-aura.com',          pass:'AdminKLIN2024', role:'maestro', areas:[], areaId:null,
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:true,sign:true,viewAll:true}},
+
+  {id:'u2', name:'Gerente Norte',   email:'gerente_norte@klin-aura.com',     pass:'Gerente2024',  role:'gerente',
+   areas:['aura-zapopan','klin-zapopan','klin-mariano','chofer-mar'], areaId:null,
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:true,sign:true,viewAll:true}},
+
+  {id:'u3', name:'Gerente Sur',     email:'gerente_sur@klin-aura.com',       pass:'Gerente2024',  role:'gerente',
+   areas:['aura-mariano','aura-tlaquepaque','klin-tlaquepaque','chofer-tlq'], areaId:null,
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:true,sign:true,viewAll:true}},
+
+  {id:'u4', name:'Anginio',         email:'anginio@klin-aura.com',           pass:'Gerente2024',  role:'gerente',
+   areas:['alm-aura','alm-klin','tienda-linea','produccion'], areaId:null,
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:true,sign:true,viewAll:true}},
+
+  // Departamento users
+  {id:'u5',  name:'Resp. AURA Mariano',    email:'aura_mariano@klin-aura.com',   pass:'Depto2024', role:'depto', areas:[], areaId:'aura-mariano',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u6',  name:'Resp. AURA Zapopan',    email:'aura_zapopan@klin-aura.com',   pass:'Depto2024', role:'depto', areas:[], areaId:'aura-zapopan',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u7',  name:'Resp. AURA Tlaquepaque',email:'aura_tlaq@klin-aura.com',      pass:'Depto2024', role:'depto', areas:[], areaId:'aura-tlaquepaque',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u8',  name:'Resp. KLIN Mariano',    email:'klin_mariano@klin-aura.com',   pass:'Depto2024', role:'depto', areas:[], areaId:'klin-mariano',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u9',  name:'Resp. KLIN Zapopan',    email:'klin_zapopan@klin-aura.com',   pass:'Depto2024', role:'depto', areas:[], areaId:'klin-zapopan',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u10', name:'Resp. KLIN Tlaquepaque',email:'klin_tlaq@klin-aura.com',      pass:'Depto2024', role:'depto', areas:[], areaId:'klin-tlaquepaque',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u11', name:'Resp. Almacén AURA',    email:'alm_aura@klin-aura.com',      pass:'Depto2024', role:'depto', areas:[], areaId:'alm-aura',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u12', name:'Resp. Almacén KLIN',    email:'alm_klin@klin-aura.com',      pass:'Depto2024', role:'depto', areas:[], areaId:'alm-klin',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u13', name:'Resp. Tienda en Línea', email:'linea@klin-aura.com',         pass:'Depto2024', role:'depto', areas:[], areaId:'tienda-linea',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u14', name:'Resp. Producción',      email:'produccion@klin-aura.com',    pass:'Depto2024', role:'depto', areas:[], areaId:'produccion',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u15', name:'Resp. Marketing',       email:'marketing@klin-aura.com',     pass:'Depto2024', role:'depto', areas:[], areaId:'marketing',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u16', name:'Resp. RH',             email:'rh@klin-aura.com',            pass:'Depto2024', role:'depto', areas:[], areaId:'rh',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u17', name:'Resp. Contabilidad',   email:'conta@klin-aura.com',         pass:'Depto2024', role:'depto', areas:[], areaId:'contabilidad',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u18', name:'Chofer Mariano',       email:'chofer_mar@klin-aura.com',    pass:'Depto2024', role:'depto', areas:[], areaId:'chofer-mar',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+  {id:'u19', name:'Chofer Tlaquepaque',   email:'chofer_tlq@klin-aura.com',    pass:'Depto2024', role:'depto', areas:[], areaId:'chofer-tlq',
+   perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}},
+];
+
+// ══════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════
+const S = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: k => localStorage.removeItem(k),
+};
+
+function getUsers() { return S.get('users') || DEFAULT_USERS; }
+function saveUsers(u) { S.set('users', u); }
+
+// ══════════════════════════════════════════
+//  AUTH STATE
+// ══════════════════════════════════════════
+let CU = null; // current user
+
+function doLogin() {
+  const email = document.getElementById('lgEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('lgPass').value;
+  const users = getUsers();
+  const user  = users.find(u => u.email.toLowerCase()===email && u.pass===pass);
+  if (!user) {
+    document.getElementById('lgErr').style.display='block';
+    return;
+  }
+  CU = user;
+  S.set('session', user.id);
+  startApp();
+}
+
+function doLogout() {
+  S.del('session');
+  CU = null;
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('lgPass').value='';
+  document.getElementById('lgErr').style.display='none';
+}
+
+// ══════════════════════════════════════════
+//  PERMISSION HELPERS
+// ══════════════════════════════════════════
+// Can this user VIEW an area at all?
+function canViewArea(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return true; // gerente sees all areas (but edits only supervised)
+  if (user.role==='depto')  return user.areaId === areaId;
+  return false;
+}
+
+// Can this user EDIT (directly, not propose) an area?
+function canDirectEdit(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId);
+  return false; // depto always proposes
+}
+
+// Can this user edit PROCESSES (direct or propose)?
+function canEditProc(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId) && (user.perms?.editProc !== false);
+  if (user.role==='depto')   return user.areaId===areaId && (user.perms?.editProc !== false);
+  return false;
+}
+
+// Can this user edit ENTREGABLES?
+function canEditEnt(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId) && (user.perms?.editEnt !== false);
+  if (user.role==='depto')   return user.areaId===areaId && (user.perms?.editEnt !== false);
+  return false;
+}
+
+// Can this user fill KPI VALUES?
+function canFillKPI(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId) && (user.perms?.editKPI !== false);
+  if (user.role==='depto')   return user.areaId===areaId && (user.perms?.editKPI !== false);
+  return false;
+}
+
+// Can this user QUALIFY KPIs (✅/❌)?
+function canQualify(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId) && (user.perms?.qualify !== false);
+  if (user.role==='depto')   return user.perms?.qualify === true; // custom override only
+  return false;
+}
+
+// Can this user SIGN KPIs?
+function canSign(user, areaId) {
+  if (!user) return false;
+  if (user.role==='maestro') return true;
+  if (user.role==='gerente') return user.areas.includes(areaId) && (user.perms?.sign !== false);
+  if (user.role==='depto')   return user.perms?.sign === true; // custom override only
+  return false;
+}
+
+// Is depto editing a process? (they propose instead of direct edit)
+function isProposeMode(user, areaId) {
+  if (!user) return false;
+  return user.role==='depto' && user.areaId===areaId;
+}
+
+// Areas this user can VIEW
+function getViewableAreas(user) {
+  if (!user) return [];
+  if (user.role==='maestro' || user.role==='gerente') return AREA_LIST.map(a=>a.id);
+  return [user.areaId].filter(Boolean);
+}
+
+// Areas this user can EDIT (directly)
+function getEditableAreas(user) {
+  if (!user) return [];
+  if (user.role==='maestro') return AREA_LIST.map(a=>a.id);
+  if (user.role==='gerente') return user.areas || [];
+  if (user.role==='depto')   return [user.areaId].filter(Boolean);
+  return [];
+}
+
+// Check if gerente has pending proposals from their supervised areas
+function getGerPendingCount(user) {
+  if (!user || user.role!=='gerente') return 0;
+  let count = 0;
+  (user.areas||[]).forEach(aid => {
+    const prop = S.get(`proc-proposal-${aid}`);
+    if (prop && prop.status==='pending') count++;
+  });
+  return count;
+}
+
+// Check if any area has unsigned submitted KPIs (for gerente sidebar)
+function getGerSignCount(user) {
+  if (!user || user.role!=='gerente') return 0;
+  let count = 0;
+  const wk = getWeekKey();
+  (user.areas||[]).forEach(aid => {
+    const sig = S.get(`sig-${aid}-${wk}`);
+    if (sig && sig.status==='submitted') count++;
+  });
+  return count;
+}
+
+// KPI week key
+function getWeekKey(date) {
+  const d = date ? new Date(date) : new Date();
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function isKPILocked(areaId, weekKey) {
+  const sig = S.get(`sig-${areaId}-${weekKey}`);
+  return sig && (sig.status==='signed' || sig.status==='validated');
+}
+
+// ══════════════════════════════════════════
+//  MODAL HELPERS
+// ══════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let _obsCallback = null;
+function obsModal(title, cb) {
+  document.getElementById('modalObsTitle').textContent = title;
+  document.getElementById('modalObsText').value = '';
+  _obsCallback = cb;
+  document.getElementById('modalObsOk').onclick = () => { closeModal('modalObs'); cb(document.getElementById('modalObsText').value); };
+  openModal('modalObs');
+}
+
+let _confirmCallback = null;
+function confirmDialog(msg, cb, btnTxt='Confirmar') {
+  document.getElementById('modalConfirmMsg').textContent = msg;
+  document.getElementById('modalConfirmOk').textContent = btnTxt;
+  _confirmCallback = cb;
+  document.getElementById('modalConfirmOk').onclick = () => { closeModal('modalConfirm'); cb(); };
+  openModal('modalConfirm');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  ROUTING + SIDEBAR
+// ══════════════════════════════════════════
+let currentRoute = 'dashboard';
+let currentArea  = null;
+
+function setTitle(t, sub='') {
+  document.getElementById('topTitle').textContent = t;
+  document.getElementById('topSub').textContent   = sub;
+}
+
+function renderSidebar() {
+  const nav = document.getElementById('sbNav');
+  document.getElementById('sbName').textContent = CU.name;
+  const roleLabel = {maestro:'Maestro', gerente:'Gerente', depto:'Departamento'}[CU.role];
+  document.getElementById('sbRole').textContent = roleLabel;
+  let html = '';
+
+  if (CU.role === 'maestro') {
+    html += `<div class="sb-section">General</div>
+    <div class="sb-btn ${currentRoute==='dashboard'?'active':''}" onclick="route('dashboard')"><span class="ic">📊</span>Dashboard</div>
+    <div class="sb-btn ${currentRoute==='gerentes'?'active':''}" onclick="route('gerentes')"><span class="ic">👔</span>KPIs de Gerentes</div>
+    <div class="sb-btn ${currentRoute==='usuarios'?'active':''}" onclick="route('usuarios')"><span class="ic">👥</span>Usuarios y Permisos</div>
+    <div class="sb-section">Áreas</div>`;
+    AREA_LIST.forEach(a => {
+      const cls = currentArea===a.id ? 'active' : '';
+      const brand = a.brand==='AURA'?'brand-aura':a.brand==='KLIN'?'brand-klin':'brand-op';
+      html += `<button class="area-pill ${cls} ${brand}" onclick="route('area','${a.id}')">${a.name}</button>`;
+    });
+  }
+
+  else if (CU.role === 'gerente') {
+    const pendProp = getGerPendingCount(CU);
+    const pendSign = getGerSignCount(CU);
+    html += `<div class="sb-section">General</div>
+    <div class="sb-btn ${currentRoute==='dashboard'?'active':''}" onclick="route('dashboard')"><span class="ic">📊</span>Mi Dashboard</div>
+    <div class="sb-btn ${currentRoute==='gkpis'?'active':''}" onclick="route('gkpis')"><span class="ic">📈</span>Mis KPIs ${pendProp>0||pendSign>0?'<span class="pend-dot"></span>':''}</div>
+    <div class="sb-section">Mis Áreas (editar)</div>`;
+    (CU.areas||[]).forEach(aid => {
+      const a = AREA_LIST.find(x=>x.id===aid);
+      if (!a) return;
+      const cls = currentArea===aid ? 'active' : '';
+      const brand = a.brand==='AURA'?'brand-aura':a.brand==='KLIN'?'brand-klin':'brand-op';
+      const prop = S.get(`proc-proposal-${aid}`);
+      const sig  = S.get(`sig-${aid}-${getWeekKey()}`);
+      const dot  = (prop&&prop.status==='pending') || (sig&&sig.status==='submitted') ? '<span class="pend-dot"></span>' : '';
+      html += `<button class="area-pill ${cls} ${brand}" onclick="route('area','${aid}')">${a.name}${dot}</button>`;
+    });
+    html += `<div class="sb-section">Otras Áreas (ver)</div>`;
+    AREA_LIST.filter(a=>!CU.areas.includes(a.id)).forEach(a => {
+      const cls = currentArea===a.id ? 'active' : '';
+      const brand = a.brand==='AURA'?'brand-aura':a.brand==='KLIN'?'brand-klin':'brand-op';
+      html += `<button class="area-pill ${cls} ${brand}" onclick="route('area','${a.id}')">${a.name}</button>`;
+    });
+  }
+
+  else { // depto
+    const areaObj = AREA_LIST.find(a=>a.id===CU.areaId);
+    const brand = areaObj?.brand==='AURA'?'brand-aura':areaObj?.brand==='KLIN'?'brand-klin':'brand-op';
+    html += `<div class="sb-section">Mi Área</div>
+    <div class="sb-btn ${currentRoute==='dashboard'?'active':''}" onclick="route('dashboard')"><span class="ic">📊</span>Inicio</div>
+    ${CU.areaId?`<button class="area-pill active ${brand}" onclick="route('area','${CU.areaId}')">${areaObj?.name||CU.areaId}</button>`:''}`;
+  }
+
+  nav.innerHTML = html;
+  document.getElementById('weekLabel').textContent = 'Semana ' + getWeekKey();
+}
+
+function route(page, param) {
+  currentRoute = page;
+  currentArea  = param || null;
+  renderSidebar();
+  const body = document.getElementById('mainBody');
+  if (page==='dashboard')    { renderDashboard(body); }
+  else if (page==='usuarios'){ renderUsuarios(body); }
+  else if (page==='gerentes'){ renderGerentesKPIs(body); }
+  else if (page==='gkpis')   { renderMyGKPIs(body); }
+  else if (page==='area')    { renderAreaView(body, param); }
+  else body.innerHTML = '<p>Página no encontrada</p>';
+}
+
+// ══════════════════════════════════════════
+//  MAESTRO DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(body) {
+  if (CU.role==='maestro') renderMaestroDashboard(body);
+  else if (CU.role==='gerente') renderGerenteDashboard(body);
+  else renderDeptoDashboard(body);
+}
+
+function renderMaestroDashboard(body) {
+  setTitle('Dashboard Maestro', 'Vista global de todas las áreas');
+  const wk = getWeekKey();
+  let validated=0, signed=0, submitted=0, draft=0;
+  AREA_LIST.forEach(a => {
+    const sig = S.get(`sig-${a.id}-${wk}`);
+    const st  = sig?.status || 'draft';
+    if (st==='validated') validated++;
+    else if (st==='signed') signed++;
+    else if (st==='submitted') submitted++;
+    else draft++;
+  });
+  const users = getUsers();
+  const pendProps = AREA_LIST.filter(a => { const p=S.get(`proc-proposal-${a.id}`); return p&&p.status==='pending'; });
+
+  body.innerHTML = `
+  <div class="grid4" style="margin-bottom:20px">
+    <div class="stat-box verde"><div class="stat-val">${validated}</div><div class="stat-lbl">KPIs Validados</div></div>
+    <div class="stat-box azul"><div class="stat-val">${signed}</div><div class="stat-lbl">Firmados por Gerente</div></div>
+    <div class="stat-box amarillo"><div class="stat-val">${submitted}</div><div class="stat-lbl">En revisión</div></div>
+    <div class="stat-box rojo"><div class="stat-val">${pendProps.length}</div><div class="stat-lbl">Propuestas de proceso</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Estado KPIs — ${wk}</span></div>
+      <table>
+        <tr><th>Área</th><th>Estado</th><th>Acción</th></tr>
+        ${AREA_LIST.map(a=>{
+          const sig=S.get(`sig-${a.id}-${wk}`);
+          const st=sig?.status||'draft';
+          const badges={draft:'<span class="badge badge-gray">Borrador</span>',submitted:'<span class="badge badge-pen">⏳ En revisión</span>',signed:'<span class="badge badge-info">✍ Firmado</span>',validated:'<span class="badge badge-ok">✅ Validado</span>'};
+          const actBtn = st==='signed' ? `<button class="btn btn-ok btn-sm" onclick="route('area','${a.id}')">Validar</button>` : `<button class="btn btn-ghost btn-sm" onclick="route('area','${a.id}')">Ver</button>`;
+          return `<tr><td>${a.name}</td><td>${badges[st]||badges.draft}</td><td>${actBtn}</td></tr>`;
+        }).join('')}
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Propuestas de proceso pendientes</span></div>
+      ${pendProps.length===0
+        ? '<p style="color:#888;font-size:12px">No hay propuestas pendientes.</p>'
+        : pendProps.map(a=>{
+            const p=S.get(`proc-proposal-${a.id}`);
+            return `<div class="proposal-banner">
+              <div class="pb-icon">📝</div>
+              <div class="pb-body">
+                <div class="pb-title">${a.name}</div>
+                <div class="pb-sub">Propuesto por: ${p.proposedBy} — ${p.proposedAt||''}</div>
+                <div class="pb-actions">
+                  <button class="btn btn-pri btn-sm" onclick="route('area','${a.id}')">Ver área</button>
+                </div>
+              </div>
+            </div>`;
+          }).join('')
+      }
+      <div style="margin-top:16px">
+        <div class="card-hdr" style="margin-bottom:10px"><span class="card-title" style="font-size:13px">Usuarios registrados (${users.length})</span><button class="btn btn-pri btn-sm" onclick="route('usuarios')">Gestionar</button></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${users.slice(0,8).map(u=>`<span class="badge badge-info">${u.name} <span style="opacity:.7">(${u.role})</span></span>`).join('')}
+          ${users.length>8?`<span class="badge badge-gray">+${users.length-8} más</span>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  GERENTE KPIs — Maestro can fill, Gerente reads only
+// ══════════════════════════════════════════
+function renderGerentesKPIs(body) {
+  setTitle('KPIs de Gerentes', 'Solo el Maestro puede ingresar valores');
+  const users = getUsers().filter(u=>u.role==='gerente');
+  const wk = getWeekKey();
+  let html = '';
+  users.forEach(u => {
+    const kvKey = `gkpis-${u.id}-${wk}`;
+    const vals  = S.get(kvKey) || {};
+    html += `<div class="card" id="gkpi-card-${u.id}">
+      <div class="card-hdr">
+        <span class="card-title">👔 ${u.name}</span>
+        <span class="badge badge-info">Semana ${wk}</span>
+      </div>
+      <table>
+        <tr><th style="width:45%">KPI</th><th>Meta</th><th>Valor</th><th>Estado</th></tr>
+        ${KPIS_GERENTE.map((k,i)=>{
+          const v = vals[i] || {val:'',status:'—'};
+          const statusBadge = v.val==='' ? '<span class="badge badge-gray">Sin dato</span>'
+            : (parseFloat(v.val) >= parseFloat(k.meta.replace(/[^0-9.]/g,'')) ? '<span class="badge badge-ok">✅ Cumple</span>' : '<span class="badge badge-no">❌ No cumple</span>');
+          return `<tr>
+            <td><strong>${k.name}</strong></td>
+            <td style="color:#888">${k.meta}</td>
+            <td>
+              <input type="number" class="td-input" value="${v.val||''}"
+                onchange="saveGKPI('${u.id}','${wk}',${i},this.value)"
+                ${CU.role!=='maestro'?'disabled':''} style="${CU.role!=='maestro'?'background:#f8f8f8;':''}">
+              <span style="font-size:10px;color:#888"> ${k.unit}</span>
+            </td>
+            <td>${statusBadge}</td>
+          </tr>`;
+        }).join('')}
+      </table>
+      ${CU.role==='maestro'?`<div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-ok btn-sm" onclick="saveGKPINote('${u.id}','${wk}')">💾 Guardar observaciones</button>
+      </div>`:''}
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+function saveGKPI(userId, wk, idx, val) {
+  if (CU.role!=='maestro') return;
+  const key = `gkpis-${userId}-${wk}`;
+  const vals = S.get(key) || {};
+  vals[idx] = {val, savedBy:CU.name, savedAt:new Date().toLocaleString('es-MX')};
+  S.set(key, vals);
+  renderSidebar();
+}
+
+function saveGKPINote(userId, wk) {
+  route('gerentes');
+}
+
+function renderMyGKPIs(body) {
+  setTitle('Mis KPIs de Gerente', 'Solo el Maestro puede editar estos valores');
+  const wk = getWeekKey();
+  const kvKey = `gkpis-${CU.id}-${wk}`;
+  const vals  = S.get(kvKey) || {};
+  const pendProp = getGerPendingCount(CU);
+  const pendSign = getGerSignCount(CU);
+  let html = '';
+  if (pendProp>0) html += `<div class="proposal-banner"><div class="pb-icon">📝</div><div class="pb-body"><div class="pb-title">${pendProp} propuesta(s) de proceso pendiente(s) de revisión</div><div class="pb-sub">Revisa las propuestas en cada área supervisada.</div></div></div>`;
+  if (pendSign>0) html += `<div class="proposal-banner" style="background:#e8f4fd;border-color:#2980b9"><div class="pb-icon">✍</div><div class="pb-body"><div class="pb-title">${pendSign} área(s) esperan tu firma de KPIs</div></div></div>`;
+  html += `<div class="card">
+    <div class="card-hdr"><span class="card-title">Mis KPIs — Semana ${wk}</span><span style="font-size:11px;color:#888">Solo el Maestro puede ingresar valores</span></div>
+    <table>
+      <tr><th style="width:45%">KPI</th><th>Meta</th><th>Valor registrado</th><th>Estado</th></tr>
+      ${KPIS_GERENTE.map((k,i)=>{
+        const v = vals[i] || {val:''};
+        const statusBadge = v.val==='' ? '<span class="badge badge-gray">Sin dato</span>'
+          : (parseFloat(v.val) >= parseFloat(k.meta.replace(/[^0-9.]/g,'')) ? '<span class="badge badge-ok">✅ Cumple</span>' : '<span class="badge badge-no">❌ No cumple</span>');
+        return `<tr>
+          <td><strong>${k.name}</strong></td>
+          <td style="color:#888">${k.meta}</td>
+          <td style="font-size:13px;font-weight:600;color:#1B3A4B">${v.val||'—'} <span style="font-size:10px;color:#888">${k.unit}</span></td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('')}
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Mis áreas supervisadas</span></div>
+    <div class="grid3">
+      ${(CU.areas||[]).map(aid=>{
+        const a=AREA_LIST.find(x=>x.id===aid);
+        if(!a) return '';
+        const sig=S.get(`sig-${aid}-${wk}`);
+        const st=sig?.status||'draft';
+        const prop=S.get(`proc-proposal-${aid}`);
+        const hasProp=prop&&prop.status==='pending';
+        const statusBadge={draft:'<span class="badge badge-gray">Borrador</span>',submitted:'<span class="badge badge-pen">⏳ En revisión</span>',signed:'<span class="badge badge-info">✍ Firmado</span>',validated:'<span class="badge badge-ok">✅ Validado</span>'}[st];
+        return `<div class="card" style="cursor:pointer;margin:0" onclick="route('area','${aid}')">
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px">${a.name}</div>
+          <div style="margin-bottom:4px">${statusBadge}</div>
+          ${hasProp?'<div><span class="badge badge-pen">📝 Propuesta pendiente</span></div>':''}
+          <div style="font-size:11px;color:#4ECDC4;margin-top:6px">Ver área →</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+  body.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+//  GERENTE DASHBOARD
+// ══════════════════════════════════════════
+function renderGerenteDashboard(body) {
+  setTitle(`Dashboard — ${CU.name}`, 'Áreas supervisadas');
+  renderMyGKPIs(body);
+}
+
+// ══════════════════════════════════════════
+//  DEPTO DASHBOARD
+// ══════════════════════════════════════════
+function renderDeptoDashboard(body) {
+  const a = AREA_LIST.find(x=>x.id===CU.areaId);
+  setTitle(`Inicio — ${a?.name||'Mi área'}`, 'Gestión de mi área');
+  const wk = getWeekKey();
+  const sig = S.get(`sig-${CU.areaId}-${wk}`);
+  const st  = sig?.status || 'draft';
+  const statusBadge={draft:'<span class="badge badge-gray">Borrador</span>',submitted:'<span class="badge badge-pen">⏳ En revisión gerente</span>',signed:'<span class="badge badge-info">✍ Firmado por gerente</span>',validated:'<span class="badge badge-ok">✅ Validado por Maestro</span>'}[st];
+  const prop = S.get(`proc-proposal-${CU.areaId}`);
+
+  body.innerHTML = `
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="stat-box azul"><div class="stat-val">${wk}</div><div class="stat-lbl">Semana actual</div></div>
+    <div class="stat-box ${st==='validated'?'verde':st==='submitted'||st==='signed'?'amarillo':'rojo'}">
+      <div style="font-size:14px;font-weight:700;padding:4px 0">${statusBadge}</div>
+      <div class="stat-lbl">Estado KPIs</div>
+    </div>
+    <div class="stat-box ${prop&&prop.status==='pending'?'amarillo':prop&&prop.status==='approved'?'verde':prop&&prop.status==='rejected'?'rojo':'azul'}">
+      <div class="stat-val" style="font-size:16px">${prop ? {pending:'⏳ Pendiente',approved:'✅ Aprobado',rejected:'❌ Rechazado'}[prop.status]||'—' : 'Sin propuesta'}</div>
+      <div class="stat-lbl">Propuesta de proceso</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Accesos rápidos</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-pri" onclick="route('area','${CU.areaId}')">📋 Ver mi área</button>
+      <button class="btn btn-aura" onclick="route('area','${CU.areaId}');setTimeout(()=>switchTab('tab-kpis'),200)">📊 Ingresar KPIs</button>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  USUARIOS (Maestro)
+// ══════════════════════════════════════════
+function renderUsuarios(body) {
+  setTitle('Usuarios y Permisos', 'Gestión de accesos del sistema');
+  const users = getUsers();
+  const roleColors = {maestro:'badge-info',gerente:'badge-pen',depto:'badge-gray'};
+  const roleNames  = {maestro:'Maestro',gerente:'Gerente',depto:'Departamento'};
+
+  body.innerHTML = `
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Usuarios del sistema (${users.length})</span>
+      <button class="btn btn-ok btn-sm" onclick="openNewUserModal()">+ Nuevo usuario</button>
+    </div>
+    <table id="usersTable">
+      <tr><th>Nombre</th><th>Correo</th><th>Contraseña</th><th>Rol</th><th>Área / Supervisadas</th><th>Acciones</th></tr>
+      ${users.map(u=>{
+        const areaLabel = u.role==='gerente' ? (u.areas||[]).map(id=>AREA_LIST.find(a=>a.id===id)?.name||id).join(', ') || '—'
+                        : u.role==='depto'   ? (AREA_LIST.find(a=>a.id===u.areaId)?.name||'—')
+                        : 'Todas';
+        return `<tr>
+          <td><strong>${u.name}</strong></td>
+          <td style="font-size:11px;color:#888">${u.email}</td>
+          <td>
+            <div class="pass-cell">
+              <span class="pass-hidden" id="pass-${u.id}">••••••••</span>
+              <button class="pass-toggle" onclick="togglePass('${u.id}','${u.pass}')" title="Ver contraseña">👁</button>
+            </div>
+          </td>
+          <td><span class="badge ${roleColors[u.role]||'badge-gray'}">${roleNames[u.role]||u.role}</span></td>
+          <td style="font-size:11px;max-width:160px;white-space:normal">${areaLabel}</td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-pri btn-sm" onclick="openEditUserModal('${u.id}')">✏ Editar</button>
+            <button class="btn btn-warn btn-sm" onclick="resetUserDefaults('${u.id}')">↺ Reset</button>
+            ${u.role!=='maestro'?`<button class="btn btn-ghost btn-sm" onclick="deleteUser('${u.id}')">🗑</button>`:''}
+          </td>
+        </tr>`;
+      }).join('')}
+    </table>
+  </div>`;
+}
+
+function togglePass(userId, pass) {
+  const el = document.getElementById(`pass-${userId}`);
+  if (!el) return;
+  if (el.classList.contains('pass-hidden')) {
+    el.textContent = pass;
+    el.classList.remove('pass-hidden');
+    el.classList.add('pass-visible');
+  } else {
+    el.textContent = '••••••••';
+    el.classList.remove('pass-visible');
+    el.classList.add('pass-hidden');
+  }
+}
+
+function openNewUserModal() {
+  const u = {id:'',name:'',email:'',pass:'',role:'depto',areas:[],areaId:null,
+    perms:{editProc:true,editEnt:true,editKPI:true,qualify:false,sign:false,viewAll:false}};
+  _editingUserId = null;
+  document.getElementById('modalUserTitle').textContent = 'Nuevo usuario';
+  document.getElementById('modalUserBody').innerHTML = buildUserForm(u, true);
+  openModal('modalUser');
+}
+
+function openEditUserModal(uid) {
+  const u = getUsers().find(x=>x.id===uid);
+  if (!u) return;
+  _editingUserId = uid;
+  document.getElementById('modalUserTitle').textContent = `Editar: ${u.name}`;
+  document.getElementById('modalUserBody').innerHTML = buildUserForm(u, false);
+  updateRoleFields(u.role);
+  openModal('modalUser');
+}
+
+let _editingUserId = null;
+
+function buildUserForm(u, isNew) {
+  const areas = AREA_LIST;
+  const roleNames = {maestro:'Maestro',gerente:'Gerente',depto:'Departamento'};
+  return `
+  <div class="grid2">
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input class="form-input" id="ef-name" value="${u.name}" placeholder="Nombre...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo electrónico</label>
+      <input class="form-input" id="ef-email" type="email" value="${u.email}" placeholder="correo@klin-aura.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="ef-pass" value="${u.pass}" placeholder="Contraseña...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rol</label>
+      <select class="form-select" id="ef-role" onchange="updateRoleFields(this.value)">
+        ${Object.entries(roleNames).map(([v,l])=>`<option value="${v}" ${u.role===v?'selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div id="ef-area-fields"></div>
+  <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
+  <div class="perm-section">
+    <div class="perm-section-title">Permisos de edición</div>
+    <div class="perm-checks">
+      <label class="perm-check"><input type="checkbox" id="ef-editProc" ${u.perms?.editProc!==false?'checked':''}> Editar procesos</label>
+      <label class="perm-check"><input type="checkbox" id="ef-editEnt"  ${u.perms?.editEnt!==false?'checked':''}> Editar entregables</label>
+      <label class="perm-check"><input type="checkbox" id="ef-editKPI"  ${u.perms?.editKPI!==false?'checked':''}> Editar valores KPI</label>
+      <label class="perm-check"><input type="checkbox" id="ef-qualify"  ${u.perms?.qualify?'checked':''}> Calificar KPIs (✅/❌)</label>
+      <label class="perm-check"><input type="checkbox" id="ef-sign"     ${u.perms?.sign?'checked':''}> Firmar KPIs</label>
+      <label class="perm-check"><input type="checkbox" id="ef-viewAll"  ${u.perms?.viewAll?'checked':''}> Ver todas las áreas</label>
+    </div>
+  </div>`;
+}
+
+function updateRoleFields(role) {
+  const container = document.getElementById('ef-area-fields');
+  if (!container) return;
+  const u = _editingUserId ? getUsers().find(x=>x.id===_editingUserId) : null;
+  if (role==='maestro') {
+    container.innerHTML = '<p style="font-size:11px;color:#888;margin-bottom:8px">El Maestro tiene acceso total a todas las áreas.</p>';
+  } else if (role==='gerente') {
+    container.innerHTML = `<div class="perm-section">
+      <div class="perm-section-title">Áreas supervisadas</div>
+      <div class="perm-checks" style="flex-direction:column">
+        ${AREA_LIST.map(a=>`<label class="perm-check"><input type="checkbox" name="ef-areas" value="${a.id}" ${(u?.areas||[]).includes(a.id)?'checked':''}> ${a.name}</label>`).join('')}
+      </div>
+    </div>`;
+  } else {
+    container.innerHTML = `<div class="form-group">
+      <label class="form-label">Área asignada</label>
+      <select class="form-select" id="ef-areaId">
+        <option value="">— Seleccionar —</option>
+        ${AREA_LIST.map(a=>`<option value="${a.id}" ${u?.areaId===a.id?'selected':''}>${a.name}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+}
+
+function saveUserModal() {
+  const name   = document.getElementById('ef-name').value.trim();
+  const email  = document.getElementById('ef-email').value.trim().toLowerCase();
+  const pass   = document.getElementById('ef-pass').value.trim();
+  const role   = document.getElementById('ef-role').value;
+  if (!name||!email||!pass) { alert('Completa nombre, correo y contraseña.'); return; }
+  const perms = {
+    editProc: document.getElementById('ef-editProc').checked,
+    editEnt:  document.getElementById('ef-editEnt').checked,
+    editKPI:  document.getElementById('ef-editKPI').checked,
+    qualify:  document.getElementById('ef-qualify').checked,
+    sign:     document.getElementById('ef-sign').checked,
+    viewAll:  document.getElementById('ef-viewAll').checked,
+  };
+  let areas = [], areaId = null;
+  if (role==='gerente') {
+    document.querySelectorAll('input[name="ef-areas"]:checked').forEach(el=>areas.push(el.value));
+  } else if (role==='depto') {
+    const sel = document.getElementById('ef-areaId');
+    areaId = sel ? sel.value : null;
+  }
+  const users = getUsers();
+  if (_editingUserId) {
+    const idx = users.findIndex(u=>u.id===_editingUserId);
+    if (idx>=0) { users[idx]={...users[idx],name,email,pass,role,areas,areaId,perms}; }
+  } else {
+    const newId = 'u' + Date.now();
+    users.push({id:newId,name,email,pass,role,areas,areaId,perms});
+  }
+  saveUsers(users);
+  closeModal('modalUser');
+  // Reload current user if they edited themselves
+  if (_editingUserId===CU.id) {
+    CU = users.find(u=>u.id===CU.id);
+    S.set('session', CU.id);
+  }
+  renderUsuarios(document.getElementById('mainBody'));
+}
+
+function resetUserDefaults(uid) {
+  confirmDialog('¿Restablecer permisos de este usuario a los valores por defecto?', () => {
+    const users = getUsers();
+    const dflt  = DEFAULT_USERS.find(u=>u.id===uid);
+    if (!dflt) { alert('No hay valores por defecto para este usuario.'); return; }
+    const idx = users.findIndex(u=>u.id===uid);
+    if (idx>=0) { users[idx] = {...dflt, name:users[idx].name, email:users[idx].email, pass:users[idx].pass}; }
+    saveUsers(users);
+    renderUsuarios(document.getElementById('mainBody'));
+  }, '↺ Restablecer');
+}
+
+function deleteUser(uid) {
+  if (uid===CU.id) { alert('No puedes eliminar tu propia cuenta.'); return; }
+  confirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.', () => {
+    const users = getUsers().filter(u=>u.id!==uid);
+    saveUsers(users);
+    renderUsuarios(document.getElementById('mainBody'));
+  }, '🗑 Eliminar');
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  AREA VIEW
+// ══════════════════════════════════════════
+let _proposalAreaId = null; // for proposal modal
+
+function renderAreaView(body, areaId) {
+  const a = AREA_LIST.find(x=>x.id===areaId);
+  if (!a) { body.innerHTML='<p>Área no encontrada</p>'; return; }
+  const canEdit    = canDirectEdit(CU, areaId);
+  const canViewOnly= !canEdit && (CU.role==='gerente' || (CU.role==='maestro'));
+  setTitle(a.name, `${a.brand} — ${a.tipo}`);
+
+  const wk      = getWeekKey();
+  const sig     = S.get(`sig-${areaId}-${wk}`) || {status:'draft'};
+  const prop    = S.get(`proc-proposal-${areaId}`);
+  const hasProp = prop && prop.status==='pending';
+
+  body.innerHTML = `
+  <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    ${renderFirmaStatus(areaId, wk)}
+  </div>
+  ${hasProp && canEdit ? renderProposalBanner(areaId, prop) : ''}
+  <div class="tabs" id="tabs-${areaId}">
+    <div class="tab-btn active" id="tab-proc-btn-${areaId}" onclick="switchAreaTab('${areaId}','proc')">📋 Procesos</div>
+    <div class="tab-btn" id="tab-ent-btn-${areaId}"  onclick="switchAreaTab('${areaId}','ent')">✅ Entregables</div>
+    <div class="tab-btn" id="tab-kpis-btn-${areaId}" onclick="switchAreaTab('${areaId}','kpis')" id="tab-kpis">📊 KPIs</div>
+  </div>
+  <div id="tab-panel-proc-${areaId}" class="tab-panel active">${renderProc(areaId, canEdit)}</div>
+  <div id="tab-panel-ent-${areaId}"  class="tab-panel">${renderEntregables(areaId, canEdit)}</div>
+  <div id="tab-panel-kpis-${areaId}" class="tab-panel">${renderKPIsPanel(areaId, wk)}</div>`;
+}
+
+function switchAreaTab(areaId, tab) {
+  ['proc','ent','kpis'].forEach(t=>{
+    document.getElementById(`tab-${t}-btn-${areaId}`)?.classList.toggle('active', t===tab);
+    document.getElementById(`tab-panel-${t}-${areaId}`)?.classList.toggle('active', t===tab);
+  });
+}
+
+// Legacy switchTab for depto dashboard quick access
+function switchTab(tabId) {
+  if (!currentArea) return;
+  const t = tabId.replace('tab-','');
+  switchAreaTab(currentArea, t);
+}
+
+// ── FIRMA STATUS ROW ──
+function renderFirmaStatus(areaId, wk) {
+  const sig = S.get(`sig-${areaId}-${wk}`) || {status:'draft'};
+  const steps = [
+    {key:'draft',     label:'Borrador',      icon:'📝'},
+    {key:'submitted', label:'Enviado',        icon:'📤'},
+    {key:'signed',    label:'Firmado',        icon:'✍'},
+    {key:'validated', label:'Validado',       icon:'✅'},
+  ];
+  const order = ['draft','submitted','signed','validated'];
+  const curIdx = order.indexOf(sig.status);
+  return steps.map((s,i)=>{
+    const cls = i<curIdx?'done':i===curIdx?'active':'pending';
+    return `<div class="firma-step ${cls}">${s.icon} ${s.label}</div>${i<3?'<div class="firma-arrow">›</div>':''}`;
+  }).join('');
+}
+
+// ── PROPOSAL BANNER ──
+function renderProposalBanner(areaId, prop) {
+  const isGerente = CU.role==='gerente' && (CU.areas||[]).includes(areaId);
+  const isMaestro = CU.role==='maestro';
+  return `<div class="proposal-banner">
+    <div class="pb-icon">📝</div>
+    <div class="pb-body">
+      <div class="pb-title">Propuesta de cambio de proceso — pendiente de revisión</div>
+      <div class="pb-sub">Propuesto por: <strong>${prop.proposedBy}</strong> el ${prop.proposedAt||''}</div>
+      ${prop.proposerObs?`<div class="pb-sub" style="margin-top:2px">Motivo: ${prop.proposerObs}</div>`:''}
+      <div class="pb-actions">
+        ${isGerente||isMaestro ? `<button class="btn btn-pri btn-sm" onclick="openProposalModal('${areaId}')">Ver y decidir</button>` : '<span class="badge badge-pen">En espera de decisión del gerente</span>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  PROCESOS
+// ══════════════════════════════════════════
+function getProc(areaId) {
+  return S.get(`proc-approved-${areaId}`) || getDefProc(areaId);
+}
+
+function renderProc(areaId, canEdit) {
+  const proc = getProc(areaId);
+  const isDepto = CU.role==='depto' && CU.areaId===areaId;
+  const prop  = S.get(`proc-proposal-${areaId}`);
+  const hasPendingProp = prop && prop.status==='pending';
+
+  // History section
+  const hist = S.get(`proc-history-${areaId}`) || [];
+
+  let html = `<div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Procesos del área</span>
+      <div style="display:flex;gap:8px">
+        ${canEdit && !isDepto ? `<button class="btn btn-pri btn-sm" onclick="startDirectEditProc('${areaId}')">✏ Editar</button>` : ''}
+        ${isDepto && canEditProc(CU,areaId) && !hasPendingProp ? `<button class="btn btn-propose btn-sm" onclick="startPropose('${areaId}')">📝 Proponer cambios</button>` : ''}
+        ${hasPendingProp && isDepto ? '<span class="badge badge-pen">⏳ Propuesta en revisión</span>' : ''}
+      </div>
+    </div>
+    <div id="proc-view-${areaId}">`;
+
+  if (proc.length===0) {
+    html += '<p style="color:#888">No hay procesos definidos.</p>';
+  } else {
+    html += proc.map((p,i)=>`
+      <div class="proc-row">
+        <div class="proc-num">${i+1}</div>
+        <div class="proc-text">${p.text}</div>
+      </div>`).join('');
+  }
+
+  html += `</div>`;
+  // Proposal history
+  if (hist.length>0) {
+    html += `<details style="margin-top:14px">
+      <summary style="font-size:12px;font-weight:600;color:#888;cursor:pointer">🕐 Historial de cambios (${hist.length})</summary>
+      <div style="margin-top:8px">
+        ${hist.map(h=>`<div class="hist-item">
+          <div class="hist-meta">${h.date} — ${h.proposedBy} → ${h.reviewedBy||'—'}</div>
+          <div class="hist-status">${h.status==='approved'?'✅ Aprobado':'❌ Rechazado'}${h.obs?` — ${h.obs}`:''}</div>
+        </div>`).join('')}
+      </div>
+    </details>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+let _procEditMode = null; // 'direct' or 'propose', for areaId
+let _procEditSteps = [];
+
+function startDirectEditProc(areaId) {
+  // Replace proc-view with edit form
+  const proc = getProc(areaId);
+  _procEditMode = {mode:'direct', areaId};
+  _procEditSteps = proc.map(p=>({...p}));
+  renderProcEditForm(areaId);
+}
+
+function startPropose(areaId) {
+  const proc = getProc(areaId);
+  _procEditMode = {mode:'propose', areaId};
+  _procEditSteps = proc.map(p=>({...p}));
+  renderProcEditForm(areaId);
+}
+
+function renderProcEditForm(areaId) {
+  const container = document.getElementById(`proc-view-${areaId}`);
+  if (!container) return;
+  const isPropose = _procEditMode.mode==='propose';
+  let stepsHtml = _procEditSteps.map((s,i)=>`
+    <div class="proc-row" id="proc-edit-row-${i}">
+      <div class="proc-num">${i+1}</div>
+      <textarea class="proc-editable" id="proc-step-${i}" rows="2">${s.text}</textarea>
+      <button class="proc-del-btn" onclick="deleteStepEdit(${i})" title="Eliminar">✕</button>
+    </div>`).join('');
+  container.innerHTML = `
+    <div id="proc-steps-edit">${stepsHtml}</div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="addStepEdit('${areaId}')">+ Agregar paso</button>
+      ${isPropose ? `<div style="flex:1;min-width:180px"><input class="form-input" id="proc-obs" placeholder="Motivo del cambio (opcional)..." style="padding:5px 8px;font-size:12px"></div>` : ''}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="cancelProcEdit('${areaId}')">Cancelar</button>
+      ${isPropose
+        ? `<button class="btn btn-propose btn-sm" onclick="submitProposal('${areaId}')">📤 Enviar propuesta</button>`
+        : `<button class="btn btn-ok btn-sm" onclick="saveDirectProc('${areaId}')">💾 Guardar cambios</button>`}
+    </div>`;
+}
+
+function addStepEdit(areaId) {
+  collectStepsFromForm();
+  _procEditSteps.push({id: _procEditSteps.length+1, text:''});
+  renderProcEditForm(areaId);
+  // Focus last textarea
+  setTimeout(()=>{
+    const t = document.getElementById(`proc-step-${_procEditSteps.length-1}`);
+    if(t) t.focus();
+  },50);
+}
+
+function deleteStepEdit(idx) {
+  collectStepsFromForm();
+  _procEditSteps.splice(idx,1);
+  _procEditSteps.forEach((s,i)=>s.id=i+1);
+  if (_procEditMode) renderProcEditForm(_procEditMode.areaId);
+}
+
+function collectStepsFromForm() {
+  _procEditSteps.forEach((s,i)=>{
+    const t = document.getElementById(`proc-step-${i}`);
+    if(t) s.text = t.value.trim();
+  });
+}
+
+function cancelProcEdit(areaId) {
+  _procEditMode = null;
+  renderAreaView(document.getElementById('mainBody'), areaId);
+}
+
+function saveDirectProc(areaId) {
+  collectStepsFromForm();
+  const steps = _procEditSteps.filter(s=>s.text.trim());
+  S.set(`proc-approved-${areaId}`, steps);
+  // Add to history
+  const hist = S.get(`proc-history-${areaId}`) || [];
+  hist.unshift({date:new Date().toLocaleString('es-MX'), proposedBy:CU.name, reviewedBy:CU.name, status:'approved', obs:'Edición directa'});
+  S.set(`proc-history-${areaId}`, hist.slice(0,20));
+  _procEditMode = null;
+  renderAreaView(document.getElementById('mainBody'), areaId);
+}
+
+function submitProposal(areaId) {
+  collectStepsFromForm();
+  const steps = _procEditSteps.filter(s=>s.text.trim());
+  const obs   = document.getElementById('proc-obs')?.value?.trim() || '';
+  S.set(`proc-proposal-${areaId}`, {
+    steps, proposedBy:CU.name, proposedAt:new Date().toLocaleString('es-MX'),
+    status:'pending', proposerObs:obs
+  });
+  _procEditMode = null;
+  renderAreaView(document.getElementById('mainBody'), areaId);
+}
+
+// Proposal modal (for gerente/maestro)
+function openProposalModal(areaId) {
+  _proposalAreaId = areaId;
+  const prop = S.get(`proc-proposal-${areaId}`);
+  if (!prop) return;
+  const current = getProc(areaId);
+  let html = `<div style="margin-bottom:12px">
+    <strong style="font-size:12px">Proceso actual:</strong>
+    ${current.map((s,i)=>`<div class="proc-row"><div class="proc-num">${i+1}</div><div class="proc-text">${s.text}</div></div>`).join('')}
+  </div>
+  <div style="margin-bottom:12px">
+    <strong style="font-size:12px;color:#f39c12">Proceso propuesto:</strong>
+    ${prop.steps.map((s,i)=>`<div class="proc-row" style="background:#fffde7"><div class="proc-num" style="background:#f39c12">${i+1}</div><div class="proc-text">${s.text}</div></div>`).join('')}
+  </div>
+  ${prop.proposerObs?`<div style="font-size:11px;color:#888;margin-bottom:8px">Motivo: <em>${prop.proposerObs}</em></div>`:''}
+  <div class="form-group">
+    <label class="form-label">Observaciones para el responsable (opcional)</label>
+    <textarea class="form-input" id="proposal-reviewer-obs" rows="2" placeholder="Comentarios..."></textarea>
+  </div>`;
+  document.getElementById('modalProposalBody').innerHTML = html;
+  openModal('modalProposal');
+}
+
+function approveProposal() {
+  const areaId = _proposalAreaId;
+  const prop   = S.get(`proc-proposal-${areaId}`);
+  if (!prop) return;
+  const obs = document.getElementById('proposal-reviewer-obs')?.value?.trim()||'';
+  S.set(`proc-approved-${areaId}`, prop.steps);
+  S.set(`proc-proposal-${areaId}`, {...prop, status:'approved', reviewedBy:CU.name, reviewedAt:new Date().toLocaleString('es-MX'), reviewerObs:obs});
+  const hist = S.get(`proc-history-${areaId}`) || [];
+  hist.unshift({date:new Date().toLocaleString('es-MX'), proposedBy:prop.proposedBy, reviewedBy:CU.name, status:'approved', obs});
+  S.set(`proc-history-${areaId}`, hist.slice(0,20));
+  closeModal('modalProposal');
+  renderAreaView(document.getElementById('mainBody'), areaId);
+}
+
+function rejectProposal() {
+  const areaId = _proposalAreaId;
+  const prop   = S.get(`proc-proposal-${areaId}`);
+  if (!prop) return;
+  const obs = document.getElementById('proposal-reviewer-obs')?.value?.trim()||'';
+  S.set(`proc-proposal-${areaId}`, {...prop, status:'rejected', reviewedBy:CU.name, reviewedAt:new Date().toLocaleString('es-MX'), reviewerObs:obs});
+  const hist = S.get(`proc-history-${areaId}`) || [];
+  hist.unshift({date:new Date().toLocaleString('es-MX'), proposedBy:prop.proposedBy, reviewedBy:CU.name, status:'rejected', obs});
+  S.set(`proc-history-${areaId}`, hist.slice(0,20));
+  closeModal('modalProposal');
+  renderAreaView(document.getElementById('mainBody'), areaId);
+}
+
+// ══════════════════════════════════════════
+//  ENTREGABLES
+// ══════════════════════════════════════════
+function getEnt(areaId) {
+  const saved = S.get(`ent-${areaId}`);
+  if (saved && saved.date===new Date().toLocaleDateString('es-MX')) return saved.data;
+  return getDefEnt(areaId);
+}
+
+function renderEntregables(areaId, canEdit) {
+  const ents = getEnt(areaId);
+  const editable = canEditEnt(CU, areaId);
+  let html = `<div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Entregables del día</span>
+      ${editable?`<button class="btn btn-ok btn-sm" onclick="saveEnt('${areaId}')">💾 Guardar</button>`:''}
+    </div>
+    <table class="ent-row">
+      <tr><th style="width:36px">✓</th><th>Entregable</th><th style="width:200px">Observaciones</th></tr>
+      ${ents.map((e,i)=>`<tr>
+        <td><input type="checkbox" class="ent-check" id="ent-c-${areaId}-${i}" ${e.check?'checked':''} ${!editable?'disabled':''} onchange="updateEnt('${areaId}',${i},'check',this.checked)"></td>
+        <td><strong>${e.text}</strong></td>
+        <td><input class="ent-obs" id="ent-o-${areaId}-${i}" value="${e.obs||''}" placeholder="Obs..." ${!editable?'disabled':''} onchange="updateEnt('${areaId}',${i},'obs',this.value)"></td>
+      </tr>`).join('')}
+    </table>
+    ${!editable?`<p style="font-size:11px;color:#888;margin-top:8px">Solo lectura para tu rol.</p>`:''}
+  </div>`;
+  return html;
+}
+
+let _entBuf = {};
+function updateEnt(areaId, idx, field, val) {
+  const key = `ent-${areaId}`;
+  if (!_entBuf[key]) {
+    const ents = getEnt(areaId);
+    _entBuf[key] = ents.map(e=>({...e}));
+  }
+  _entBuf[key][idx][field] = val;
+}
+function saveEnt(areaId) {
+  const key = `ent-${areaId}`;
+  const ents = _entBuf[key] || getEnt(areaId);
+  // Also read current DOM state
+  ents.forEach((e,i)=>{
+    const c = document.getElementById(`ent-c-${areaId}-${i}`);
+    const o = document.getElementById(`ent-o-${areaId}-${i}`);
+    if(c) e.check = c.checked;
+    if(o) e.obs   = o.value;
+  });
+  S.set(`ent-${areaId}`, {date:new Date().toLocaleDateString('es-MX'), data:ents});
+  delete _entBuf[key];
+  // Flash save feedback
+  const btn = event?.target;
+  if(btn){ btn.textContent='✅ Guardado'; setTimeout(()=>btn.textContent='💾 Guardar',1500); }
+}
+
+// ══════════════════════════════════════════
+//  KPIs PANEL
+// ══════════════════════════════════════════
+function renderKPIsPanel(areaId, wk) {
+  const kpis   = getKpiDef(areaId);
+  const locked = isKPILocked(areaId, wk);
+  const sig    = S.get(`sig-${areaId}-${wk}`) || {status:'draft'};
+  const fillable= canFillKPI(CU, areaId) && !locked;
+  const qualifiable = canQualify(CU, areaId);
+  const signable = canSign(CU, areaId);
+  const isMaestro = CU.role==='maestro';
+
+  const DAYS = ['LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+
+  let html = `<div class="card">
+    <div class="card-hdr">
+      <span class="card-title">KPIs — Semana ${wk}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${locked?'<span class="badge badge-info">🔒 Bloqueado</span>':'<span class="badge badge-gray">✏ Editable</span>'}
+        ${isMaestro&&locked?`<button class="btn btn-amber btn-sm" onclick="unlockKPI('${areaId}','${wk}')">🔓 Desbloquear</button>`:''}
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th style="min-width:180px">KPI</th><th>Meta</th>
+        ${DAYS.map(d=>`<th class="td-num">${d}</th>`).join('')}
+        <th class="td-num">Prom</th>
+        ${qualifiable?'<th class="td-num">Estado</th>':''}
+        <th>Obs.</th>
+      </tr>
+      ${kpis.map((k,ki)=>{
+        const kdata = S.get(`kpi-${areaId}-${ki}-${wk}`) || {};
+        const vals  = DAYS.map((_,di)=>{
+          const v = kdata[`d${di}`];
+          return v!==undefined&&v!=='' ? parseFloat(v)||0 : null;
+        });
+        const numVals = vals.filter(v=>v!==null);
+        const avg = numVals.length ? (numVals.reduce((a,b)=>a+b,0)/numVals.length).toFixed(1) : '—';
+        const qual= kdata.qual || {status:'', obs:''};
+        const qualBadge = qual.status==='ok'?'<span class="badge badge-ok">✅ Cumple</span>':qual.status==='no'?'<span class="badge badge-no">❌ No cumple</span>':'<span class="badge badge-gray">—</span>';
+        return `<tr>
+          <td><strong style="font-size:12px">${k.name}</strong></td>
+          <td style="font-size:11px;color:#888;white-space:nowrap">${k.meta}</td>
+          ${DAYS.map((_,di)=>`<td class="td-num">
+            <input type="number" class="td-input" id="kpiv-${areaId}-${ki}-${di}"
+              value="${kdata[`d${di}`]!==undefined?kdata[`d${di}`]:''}"
+              ${!fillable?'disabled':''} style="${!fillable?'background:#f8f8f8;border-color:#eee':''}"
+              onchange="saveKPIVal('${areaId}',${ki},${di},this.value,'${wk}')">
+          </td>`).join('')}
+          <td class="td-num" style="font-weight:700;color:#1B3A4B">${avg}</td>
+          ${qualifiable?`<td class="td-num">
+            ${qualifiable?`<select onchange="saveKPIQual('${areaId}',${ki},'${wk}',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid #ddd;border-radius:4px">
+              <option value="" ${!qual.status?'selected':''}>—</option>
+              <option value="ok" ${qual.status==='ok'?'selected':''}>✅</option>
+              <option value="no" ${qual.status==='no'?'selected':''}>❌</option>
+            </select>`:qualBadge}
+          </td>`:''}
+          <td><input class="ent-obs" value="${qual.obs||''}" placeholder="..." style="width:90px"
+            ${!qualifiable?'disabled':''} onchange="saveKPIObs('${areaId}',${ki},'${wk}',this.value)"></td>
+        </tr>`;
+      }).join('')}
+    </table>
+    </div>
+    ${fillable?`<div style="margin-top:10px">
+      <button class="btn btn-ok btn-sm" onclick="autoSaveKPIs('${areaId}','${wk}')">💾 Guardar KPIs</button>
+    </div>`:''}
+  </div>
+  ${renderFirmaActions(areaId, wk, sig, signable, isMaestro)}`;
+  return html;
+}
+
+function saveKPIVal(areaId, kpiIdx, dayIdx, val, wk) {
+  if (isKPILocked(areaId, wk)) return;
+  const key  = `kpi-${areaId}-${kpiIdx}-${wk}`;
+  const kdata = S.get(key) || {};
+  kdata[`d${dayIdx}`] = val;
+  S.set(key, kdata);
+}
+
+function saveKPIQual(areaId, kpiIdx, wk, status) {
+  const key  = `kpi-${areaId}-${kpiIdx}-${wk}`;
+  const kdata = S.get(key) || {};
+  kdata.qual = {...(kdata.qual||{}), status};
+  S.set(key, kdata);
+}
+
+function saveKPIObs(areaId, kpiIdx, wk, obs) {
+  const key  = `kpi-${areaId}-${kpiIdx}-${wk}`;
+  const kdata = S.get(key) || {};
+  kdata.qual = {...(kdata.qual||{}), obs};
+  S.set(key, kdata);
+}
+
+function autoSaveKPIs(areaId, wk) {
+  const kpis = getKpiDef(areaId);
+  kpis.forEach((k,ki) => {
+    [0,1,2,3,4,5].forEach(di => {
+      const el = document.getElementById(`kpiv-${areaId}-${ki}-${di}`);
+      if(el) saveKPIVal(areaId, ki, di, el.value, wk);
+    });
+  });
+  const btn = event?.target;
+  if(btn){ btn.textContent='✅ Guardado'; setTimeout(()=>btn.textContent='💾 Guardar KPIs',1500); }
+}
+
+function unlockKPI(areaId, wk) {
+  confirmDialog('¿Desbloquear los KPIs de esta semana? Se eliminará la firma actual.', ()=>{
+    S.del(`sig-${areaId}-${wk}`);
+    renderAreaView(document.getElementById('mainBody'), areaId);
+    setTimeout(()=>switchAreaTab(areaId,'kpis'),50);
+  }, '🔓 Desbloquear');
+}
+
+// ══════════════════════════════════════════
+//  FIRMA ACTIONS
+// ══════════════════════════════════════════
+function renderFirmaActions(areaId, wk, sig, signable, isMaestro) {
+  const st = sig.status;
+  let html = `<div class="card">
+    <div class="card-hdr"><span class="card-title">Flujo de firmas</span></div>`;
+
+  if (CU.role==='depto' && CU.areaId===areaId) {
+    if (st==='draft') {
+      html += `<p style="font-size:12px;margin-bottom:10px">Cuando termines de ingresar los KPIs, envíalos al gerente para revisión.</p>
+      <button class="btn btn-aura" onclick="submitKPIs('${areaId}','${wk}')">📤 Enviar para revisión</button>`;
+    } else {
+      html += `<div class="approved-banner">📤 KPIs enviados al gerente — ${sig.dept?.time||''}</div>`;
+      if(st==='signed') html += `<div class="approved-banner">✍ Firmado por gerente: ${sig.gerente?.name||'—'} — ${sig.gerente?.time||''}</div>`;
+      if(st==='validated') html += `<div class="approved-banner">✅ Validado por Maestro: ${sig.maestro?.name||'—'}</div>`;
+    }
+  } else if (signable && st==='submitted') {
+    html += `<div class="approved-banner">📤 Enviado por: ${sig.dept?.name||'—'} — ${sig.dept?.time||''}</div>
+    <p style="font-size:12px;margin:10px 0">Revisa los KPIs y firma de conformidad.</p>
+    <button class="btn btn-ok" onclick="openGerenteSign('${areaId}','${wk}')">✍ Firmar KPIs</button>`;
+  } else if (signable && (st==='draft'||st==='') && (CU.role==='gerente'||CU.role==='maestro')) {
+    html += `<p style="font-size:12px;color:#888">Los KPIs aún no han sido enviados por el responsable.</p>`;
+    if(CU.role==='gerente' || CU.role==='maestro') {
+      html += `<button class="btn btn-pri btn-sm" style="margin-top:8px" onclick="directSign('${areaId}','${wk}')">✍ Firmar directamente</button>`;
+    }
+  } else if (isMaestro && st==='signed') {
+    html += `<div class="approved-banner">✍ Firmado por gerente: ${sig.gerente?.name||'—'} — ${sig.gerente?.time||''}</div>
+    <p style="font-size:12px;margin:10px 0">Valida los KPIs para completar el ciclo.</p>
+    <button class="btn btn-ok" onclick="openMaestroValidate('${areaId}','${wk}')">✅ Validar KPIs</button>`;
+  } else if (st==='validated') {
+    html += `<div class="approved-banner">✅ KPIs validados por Maestro — ${sig.maestro?.name||'—'} — ${sig.maestro?.time||''}</div>`;
+  } else if (st==='submitted') {
+    html += `<div class="approved-banner" style="background:#e8f4fd;border-color:#2980b9">📤 Enviado — esperando firma del gerente</div>`;
+  } else if (st==='signed') {
+    html += `<div class="approved-banner">✍ Firmado por gerente — esperando validación del Maestro</div>`;
+  }
+
+  // Signature details
+  if (sig.dept?.name) html += `<div style="margin-top:8px;font-size:11px;color:#888">📤 Depto: <strong>${sig.dept.name}</strong> — ${sig.dept.time}</div>`;
+  if (sig.gerente?.name) html += `<div style="font-size:11px;color:#888">✍ Gerente: <strong>${sig.gerente.name}</strong> — ${sig.gerente.time}${sig.gerente.obs?` — "${sig.gerente.obs}"`:''}</div>`;
+  if (sig.maestro?.name) html += `<div style="font-size:11px;color:#888">✅ Maestro: <strong>${sig.maestro.name}</strong> — ${sig.maestro.time}${sig.maestro.obs?` — "${sig.maestro.obs}"`:''}</div>`;
+
+  html += '</div>';
+  return html;
+}
+
+function submitKPIs(areaId, wk) {
+  const sig = S.get(`sig-${areaId}-${wk}`) || {status:'draft'};
+  sig.status = 'submitted';
+  sig.dept   = {user:CU.id, name:CU.name, time:new Date().toLocaleString('es-MX')};
+  S.set(`sig-${areaId}-${wk}`, sig);
+  renderAreaView(document.getElementById('mainBody'), areaId);
+  setTimeout(()=>switchAreaTab(areaId,'kpis'),50);
+}
+
+function directSign(areaId, wk) {
+  obsModal('Observaciones de firma (opcional)', obs => {
+    const sig = {status:'signed', dept:{user:CU.id,name:CU.name,time:new Date().toLocaleString('es-MX')}, gerente:{user:CU.id,name:CU.name,obs,time:new Date().toLocaleString('es-MX')}};
+    S.set(`sig-${areaId}-${wk}`, sig);
+    renderAreaView(document.getElementById('mainBody'), areaId);
+    setTimeout(()=>switchAreaTab(areaId,'kpis'),50);
+  });
+}
+
+function openGerenteSign(areaId, wk) {
+  obsModal('Observaciones para firma de gerente (opcional)', obs => {
+    const sig = S.get(`sig-${areaId}-${wk}`) || {status:'submitted'};
+    sig.status  = 'signed';
+    sig.gerente = {user:CU.id, name:CU.name, obs, time:new Date().toLocaleString('es-MX')};
+    S.set(`sig-${areaId}-${wk}`, sig);
+    renderAreaView(document.getElementById('mainBody'), areaId);
+    setTimeout(()=>switchAreaTab(areaId,'kpis'),50);
+  });
+}
+
+function openMaestroValidate(areaId, wk) {
+  obsModal('Observaciones de validación Maestro (opcional)', obs => {
+    const sig = S.get(`sig-${areaId}-${wk}`) || {status:'signed'};
+    sig.status  = 'validated';
+    sig.maestro = {user:CU.id, name:CU.name, obs, time:new Date().toLocaleString('es-MX')};
+    S.set(`sig-${areaId}-${wk}`, sig);
+    renderAreaView(document.getElementById('mainBody'), areaId);
+    setTimeout(()=>switchAreaTab(areaId,'kpis'),50);
+  });
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  APP INIT
+// ══════════════════════════════════════════
+function startApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display   = 'block';
+  // Default route by role
+  if (CU.role==='depto' && CU.areaId) {
+    currentArea = CU.areaId;
+    route('area', CU.areaId);
+  } else {
+    route('dashboard');
+  }
+}
+
+// Auto-login from session
+window.addEventListener('DOMContentLoaded', () => {
+  const sid = S.get('session');
+  if (sid) {
+    const user = getUsers().find(u=>u.id===sid);
+    if (user) { CU = user; startApp(); return; }
+  }
+  // Login screen
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('lgEmail').addEventListener('keydown', e=>{
+    if(e.key==='Enter') document.getElementById('lgPass').focus();
+  });
+  document.getElementById('lgPass').addEventListener('keydown', e=>{
+    if(e.key==='Enter') doLogin();
+  });
+});
+</script>
+</body>
+</html>
